@@ -11,7 +11,7 @@
         body {
             margin: 0;
             padding: 0;
-            background-color: #1a1a1a;
+            background-color: #1a1a1a; /* 深色背景 */
             overflow: hidden;
             display: flex;
             justify-content: center;
@@ -22,7 +22,8 @@
 
         canvas {
             display: block;
-            filter: drop-shadow(0 0 5px rgba(255, 105, 180, 0.4));
+            /* 讓樹和掉落的葉子都有發光效果 */
+            filter: drop-shadow(0 0 5px rgba(255, 105, 180, 0.5));
             position: absolute;
             z-index: 1;
         }
@@ -33,9 +34,11 @@
             z-index: 2;
             text-align: center;
             color: #fff;
-            opacity: 0;
-            transition: opacity 3s ease-in;
-            pointer-events: none;
+            opacity: 0; /* 一開始隱藏 */
+            transition: opacity 3s ease-in; /* 慢慢浮現 */
+            pointer-events: none; /* 讓滑鼠穿透 */
+            /* 【修改點 2】將文字向上推移 */
+            transform: translateY(-150px); 
         }
 
         /* 主標題樣式 */
@@ -64,7 +67,7 @@
 
     <div id="card-text">
         <div class="title">Happy Birthday</div>
-        <div class="subtitle">致 我最親愛的朋友</div>
+        <div class="subtitle">To My Best Friend</div>
     </div>
 
     <canvas id="canvas"></canvas>
@@ -74,29 +77,40 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
+        // 設定參數
         const config = {
-            startLen: 130,
-            branchWidth: 10,
+            startLen: 140,        // 初始長度稍微增加
+            branchWidth: 14,      // 【修改點 1】樹幹加粗
             colorTrunk: '#8B4513',
             colorHeart: '#FF69B4',
-            growSpeed: 40,
-            lengthRatio: 0.75,
-            angleVar: 0.4
+            growSpeed: 35,        // 生長速度
+            lengthRatio: 0.75,    // 基本長度縮減比例
+            lengthRandom: 0.15,   // 【修改點 1】長度的隨機變化幅度
+            angleVar: 0.5         // 角度的隨機變化幅度
         };
 
-        let animatingTasks = 0; 
+        let animatingTasks = 0; // 用來判斷樹是否長完
+        let fallingLeaves = []; // 存放掉落中的葉子
+        let treeFinishedImage = new Image(); // 用來存儲長好的樹的圖片
+        let isTreeDone = false; // 標記樹是否長完
 
+        // 初始化畫布
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            // 如果在樹長完後調整視窗，需要重繪已保存的樹
+            if (isTreeDone) {
+                 ctx.drawImage(treeFinishedImage, 0, 0);
+            }
         }
         resizeCanvas();
 
-        function drawHeart(x, y, size, angle) {
+        // --- 核心繪圖函數：畫愛心 (樹上的和掉落的都用這個) ---
+        function drawHeart(x, y, size, angle, color) {
             ctx.save();
             ctx.translate(x, y);
             ctx.rotate(angle - Math.PI/2);
-            ctx.fillStyle = config.colorHeart;
+            ctx.fillStyle = color || config.colorHeart;
             ctx.beginPath();
             let topCurveHeight = size * 0.3;
             ctx.moveTo(0, 0);
@@ -106,11 +120,22 @@
             ctx.restore();
         }
 
-        function showTitle() {
+        // --- 觸發結束狀態 (顯示文字 + 開始掉落葉子) ---
+        function triggerFinalState() {
+            isTreeDone = true;
+            // 1. 顯示文字
             const textDiv = document.getElementById('card-text');
             textDiv.classList.add('show-text');
+            
+            // 2. 【修改點 3】保存當前樹的樣子，準備開始掉落動畫
+            treeFinishedImage.src = canvas.toDataURL();
+            // 確保圖片載入後才開始動畫
+            treeFinishedImage.onload = function() {
+                animateFalling();
+            };
         }
 
+        // --- 遞迴畫樹函數 ---
         function drawBranch(startX, startY, len, angle, width) {
             ctx.beginPath();
             ctx.moveTo(startX, startY);
@@ -123,29 +148,85 @@
             ctx.lineTo(endX, endY);
             ctx.stroke();
 
-            if (len < 10) {
-                drawHeart(endX, endY, 12, angle);
+            // 樹枝夠短時，畫樹上的葉子並結束該分枝
+            if (len < 12) {
+                drawHeart(endX, endY, 10 + Math.random() * 5, angle); // 葉子大小也隨機一點
                 return;
             }
 
             animatingTasks++;
 
             setTimeout(() => {
-                const randomAngle = (Math.random() - 0.5) * config.angleVar; 
-                
-                drawBranch(endX, endY, len * config.lengthRatio, angle + 0.5 + randomAngle, width * 0.7);
-                drawBranch(endX, endY, len * config.lengthRatio, angle - 0.5 + randomAngle, width * 0.7);
+                // 【修改點 1】加入更多隨機性
+                const randomAngleAdj = (Math.random() - 0.5) * config.angleVar;
+                // 長度隨機因子：在 0.75 的基礎上增減隨機量
+                const randomLenFactor = config.lengthRatio + (Math.random() - 0.5) * config.lengthRandom;
+
+                // 右分枝
+                drawBranch(endX, endY, len * randomLenFactor, angle + 0.5 + randomAngleAdj, width * 0.7);
+                // 左分枝
+                drawBranch(endX, endY, len * randomLenFactor, angle - 0.5 + randomAngleAdj, width * 0.7);
                 
                 animatingTasks--;
                 if (animatingTasks === 0) {
-                    showTitle();
+                    // 全部生長任務完成
+                    triggerFinalState();
                 }
 
             }, config.growSpeed);
         }
 
-        // 啟動
+        // --- 【修改點 3】掉落葉子的物件定義 ---
+        class FallingLeaf {
+            constructor() {
+                // 從畫面寬度的中間 80% 區域隨機產生
+                this.x = canvas.width * 0.1 + Math.random() * canvas.width * 0.8;
+                // 從畫面上方產生 (但在視野外)
+                this.y = -20;
+                this.size = 5 + Math.random() * 8; // 大小隨機
+                this.speed = 0.5 + Math.random() * 1.5; // 掉落速度隨機
+                this.angle = Math.random() * Math.PI * 2; // 初始角度
+                this.spin = (Math.random() - 0.5) * 0.05; // 旋轉速度
+            }
+            update() {
+                this.y += this.speed;
+                this.angle += this.spin;
+                // 如果掉出畫面下方，返回 false 代表可以刪除了
+                return this.y < canvas.height + this.size;
+            }
+            draw() {
+                // 掉落的葉子顏色稍微淺一點，增加層次感
+                drawHeart(this.x, this.y, this.size, this.angle, '#FFC0CB');
+            }
+        }
+
+        // --- 【修改點 3】掉落動畫迴圈 ---
+        function animateFalling() {
+            requestAnimationFrame(animateFalling);
+
+            // 1. 清空畫面
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 2. 重繪那棵已經長好的樹當背景
+            ctx.drawImage(treeFinishedImage, 0, 0);
+
+            // 3. 隨機產生新的掉落葉子 (機率控制密度)
+            if (Math.random() < 0.03) {
+                fallingLeaves.push(new FallingLeaf());
+            }
+
+            // 4. 更新並繪製所有掉落中的葉子
+            // 使用 filter 來移除已經掉出畫面的葉子
+            fallingLeaves = fallingLeaves.filter(leaf => {
+                leaf.draw();
+                return leaf.update();
+            });
+        }
+
+        // --- 開始執行 ---
+        // 從畫面下方正中間開始畫
         drawBranch(canvas.width / 2, canvas.height, config.startLen, -Math.PI / 2, config.branchWidth);
+        
         window.addEventListener('resize', resizeCanvas);
     </script>
 </body>
