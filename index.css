@@ -1,18 +1,52 @@
 /* style.css */
-
 body {
     margin: 0;
     padding: 0;
-    background-color: #1a1a1a; /* 深色背景 */
-    overflow: hidden; /* 隱藏捲軸，避免樹長太大出現捲軸 */
+    background-color: #1a1a1a;
+    overflow: hidden;
     display: flex;
-    justify-content: center; /* 水平置中 */
-    align-items: center;     /* 垂直置中 */
-    height: 100vh;           /* 高度佔滿整個視窗 */
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: 'Arial', sans-serif;
 }
 
 canvas {
     display: block;
-    /* 讓樹枝和愛心有一點夢幻的發光效果 */
-    filter: drop-shadow(0 0 5px rgba(255, 105, 180, 0.5));
+    /* 樹的發光效果 */
+    filter: drop-shadow(0 0 5px rgba(255, 105, 180, 0.4));
+    position: absolute; /* 讓畫布在背景 */
+    z-index: 1;
+}
+
+/* 文字區塊設定 */
+#card-text {
+    position: relative; /* 確保文字浮在畫布上面 */
+    z-index: 2;
+    text-align: center;
+    color: #fff;
+    opacity: 0; /* 一開始隱藏 */
+    transition: opacity 3s ease-in; /* 3秒鐘慢慢浮現 */
+    pointer-events: none; /* 讓滑鼠點擊穿透文字，不會擋住後面 */
+}
+
+/* 主標題樣式 */
+.title {
+    font-family: 'Great Vibes', cursive; /* 手寫體 */
+    font-size: 5rem; /* 字體大小 */
+    color: #FFB7C5; /* 淺粉紅 */
+    text-shadow: 0 0 10px rgba(255, 105, 180, 0.8); /* 發光特效 */
+    margin-bottom: 10px;
+}
+
+/* 副標題樣式 */
+.subtitle {
+    font-size: 1.5rem;
+    color: #ddd;
+    letter-spacing: 2px;
+}
+
+/* 當這個 class 被加入時，文字會顯現 */
+.show-text {
+    opacity: 1 !important;
 }
