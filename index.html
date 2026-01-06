@@ -14,7 +14,7 @@
 
         body {
             overflow: hidden;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #000000;
             font-family: 'Arial', sans-serif;
         }
 
@@ -82,13 +82,14 @@
         const colors = ['#FF69B4', '#FFB6C1', '#FFD700', '#FFA500', '#FF4500', '#DA70D6', '#FFC0CB', '#FF1493', '#FF69B4'];
 
         const config = {
-            trunkColor: '#FFB6C1',
-            growSpeed: 12,
-            leafSize: 15,
-            lengthRatio: 0.85,
-            widthRatio: 0.7,
-            heartWidth: 1.4,
-            heartHeight: 0.75
+            trunkColor: '#8B4513',
+            growSpeed: 80,
+            leafSize: 12,
+            lengthRatio: 0.82,
+            widthRatio: 0.72,
+            heartWidth: 1.6,
+            heartHeight: 0.8,
+            leafDensity: 0.98
         };
 
         let animatingTasks = 0;
@@ -181,26 +182,36 @@
             animatingTasks++;
 
             setTimeout(() => {
-                ctx.beginPath();
-                ctx.moveTo(x, y);
-                const endX = x + len * Math.cos(angle);
-                const endY = y + len * Math.sin(angle);
-                
-                ctx.strokeStyle = config.trunkColor;
-                ctx.lineWidth = width;
-                ctx.lineCap = 'round';
-                ctx.lineTo(endX, endY);
-                ctx.stroke();
+                // 只在深度較淺時畫樹枝，讓樹枝不那麼明顯
+                if (depth < 4) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    const endX = x + len * Math.cos(angle);
+                    const endY = y + len * Math.sin(angle);
+                    
+                    ctx.strokeStyle = config.trunkColor;
+                    ctx.lineWidth = width;
+                    ctx.lineCap = 'round';
+                    ctx.lineTo(endX, endY);
+                    ctx.stroke();
+                } else {
+                    // 深度較深時，直接計算終點但不畫線
+                    var endX = x + len * Math.cos(angle);
+                    var endY = y + len * Math.sin(angle);
+                }
 
-                if (depth > 0 && Math.random() < 0.92) {
+                // 大量增加愛心葉子，填滿整個愛心形狀
+                if (depth > 0 && Math.random() < config.leafDensity) {
                     const t = Math.random();
                     const midX = x + (endX - x) * t;
                     const midY = y + (endY - y) * t;
-                    drawLeafCluster(midX, midY, 4 + depth, config.leafSize * 0.9);
+                    // 更多葉子叢集
+                    drawLeafCluster(midX, midY, 8 + Math.floor(depth * 1.5), config.leafSize);
                 }
 
-                if (len < 10 || width < 1.5) {
-                    drawLeafCluster(endX, endY, 10, config.leafSize);
+                if (len < 8 || width < 1.2) {
+                    // 末端加更多葉子
+                    drawLeafCluster(endX, endY, 15, config.leafSize * 1.2);
                     animatingTasks--;
                     if (animatingTasks === 0) finishGrowth();
                     return;
@@ -209,24 +220,24 @@
                 let leftAngle, rightAngle;
                 
                 if (depth === 0) {
-                    leftAngle = angle - 0.55 * config.heartWidth;
-                    rightAngle = angle + 0.55 * config.heartWidth;
+                    leftAngle = angle - 0.5 * config.heartWidth;
+                    rightAngle = angle + 0.5 * config.heartWidth;
                 } else {
-                    const spreadFactor = 0.35 * config.heartWidth;
-                    const verticalSuppression = depth * 0.05 * config.heartHeight;
+                    const spreadFactor = 0.38 * config.heartWidth;
+                    const verticalSuppression = depth * 0.04 * config.heartHeight;
                     
                     leftAngle = angle - spreadFactor + verticalSuppression;
                     rightAngle = angle + spreadFactor + verticalSuppression;
                     
                     if (depth > 2) {
-                        const inwardCurve = 0.08;
+                        const inwardCurve = 0.1;
                         if (side === -1) leftAngle += inwardCurve;
                         if (side === 1) rightAngle -= inwardCurve;
                     }
                 }
 
-                leftAngle += (Math.random() - 0.5) * 0.12;
-                rightAngle += (Math.random() - 0.5) * 0.12;
+                leftAngle += (Math.random() - 0.5) * 0.1;
+                rightAngle += (Math.random() - 0.5) * 0.1;
 
                 const nextSideLeft = side === 0 ? -1 : side;
                 const nextSideRight = side === 0 ? 1 : side;
@@ -276,8 +287,8 @@
         }
 
         const startX = canvas.width / 2;
-        const startY = canvas.height + 20;
-        drawBranch(startX, startY, 150, -Math.PI / 2, 26, 0, 0);
+        const startY = canvas.height - 50;
+        drawBranch(startX, startY, 140, -Math.PI / 2, 20, 0, 0);
     </script>
 </body>
 </html>
