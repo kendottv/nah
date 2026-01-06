@@ -10,11 +10,11 @@
         body {
             margin: 0;
             padding: 0;
-            background-color: #000; /* 純黑背景更凸顯色彩 */
+            background-color: #000;
             overflow: hidden;
             display: flex;
             height: 100vh;
-            font-family: 'Noto Sans TC', sans-serif; /* 支援繁體中文 */
+            font-family: 'Noto Sans TC', sans-serif;
         }
 
         canvas {
@@ -23,19 +23,17 @@
             top: 0;
             left: 0;
             z-index: 1;
-            /* 讓色彩更柔和混合 */
-            filter: contrast(1.1) brightness(1.1);
         }
 
-        /* 文字區塊：改到左側 */
+        /* 左側文字區塊 (保留你成功的版面) */
         #text-container {
             position: absolute;
             z-index: 2;
             top: 50%;
-            left: 10%; /* 靠左配置 */
+            left: 10%;
             transform: translateY(-50%);
             color: #fff;
-            text-align: left; /* 文字靠左對齊 */
+            text-align: left;
             pointer-events: none;
             opacity: 0;
             transition: opacity 3s ease-in;
@@ -45,23 +43,17 @@
         .title {
             font-family: 'Great Vibes', cursive;
             font-size: 4rem;
-            color: #FF69B4;
+            color: #FF69B4; /* 霓虹粉標題 */
             margin-bottom: 15px;
-            text-shadow: 2px 2px 10px rgba(255, 105, 180, 0.5);
+            text-shadow: 0 0 10px rgba(255, 105, 180, 0.7);
         }
 
         .message {
             font-size: 1.1rem;
             line-height: 1.8;
             color: #eee;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
         }
         
-        .highlight {
-            color: #FFD700;
-            font-weight: bold;
-        }
-
         .show-text {
             opacity: 1 !important;
         }
@@ -88,23 +80,17 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
-        // --- 繽紛配色盤 (參考你的圖片) ---
-        const colors = [
-            '#FF69B4', // 熱粉紅
-            '#FFB6C1', // 淺粉紅
-            '#FFD700', // 金黃色
-            '#FFA500', // 橘色
-            '#FF4500', // 紅橘色
-            '#DA70D6', // 蘭花紫
-            '#FFC0CB'  // 粉紅
-        ];
+        // --- 繽紛配色盤 ---
+        const colors = ['#FF69B4', '#FFB6C1', '#FFD700', '#FFA500', '#FF4500', '#DA70D6', '#FFC0CB'];
 
+        // --- 參數設定 ---
         const config = {
-            trunkColor: '#E6AAAB', // 參考圖片的淺粉棕色樹幹
-            bgColor: '#000000',
-            growSpeed: 15,         // 生長速度 (越小越快)
-            leafSize: 15,          // 葉子基礎大小
-            sway: 0.5              // 搖擺幅度
+            trunkColor: '#FFC0CB', // 淺粉色樹幹 (參考圖2)
+            growSpeed: 20,         // 生長速度
+            leafSize: 12,          // 葉子基礎大小
+            branchAngle: 0.35,     // 樹枝分叉角度基礎值
+            lengthRatio: 0.75,     // 樹枝長度縮減比例
+            widthRatio: 0.7        // 樹枝粗細縮減比例
         };
 
         let animatingTasks = 0;
@@ -115,43 +101,34 @@
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            if (isTreeDone && treeImage) {
-                ctx.drawImage(treeImage, 0, 0);
-            }
+            if (isTreeDone && treeImage) ctx.drawImage(treeImage, 0, 0);
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // 隨機選色函數
         function getRandomColor() {
             return colors[Math.floor(Math.random() * colors.length)];
         }
 
-        // 畫愛心函數
-        function drawHeart(x, y, size, angle, color, alpha = 1) {
+        // 畫愛心
+        function drawHeart(x, y, size, angle, color) {
             ctx.save();
             ctx.translate(x, y);
             ctx.rotate(angle);
-            ctx.globalAlpha = alpha; // 設定透明度讓葉子重疊時更好看
             ctx.fillStyle = color;
             ctx.beginPath();
-            
-            // 讓愛心形狀稍微圓潤一點，像花瓣
             const topCurve = size * 0.3;
             ctx.moveTo(0, 0);
             ctx.bezierCurveTo(-size / 2, -topCurve, -size, size / 3, 0, size);
             ctx.bezierCurveTo(size, size / 3, size / 2, -topCurve, 0, 0);
-            
             ctx.fill();
             ctx.restore();
         }
 
-        // 結束生長，顯示文字並開始落葉
+        // 生長結束
         function finishGrowth() {
             isTreeDone = true;
             document.getElementById('text-container').classList.add('show-text');
-            
-            // 保存當前畫面
             const img = new Image();
             img.src = canvas.toDataURL();
             img.onload = () => {
@@ -160,13 +137,8 @@
             };
         }
 
-        // --- 核心：茂密樹的遞迴函數 ---
-        // x, y: 座標
-        // len: 樹枝長度
-        // angle: 角度
-        // width: 樹枝粗細
-        // depth: 遞迴深度 (控制樹長多大)
-        function drawTree(x, y, len, angle, width, depth) {
+        // --- 核心：更有靈魂的遞迴樹 ---
+        function drawBranch(x, y, len, angle, width) {
             animatingTasks++;
 
             setTimeout(() => {
@@ -177,63 +149,51 @@
                 const endX = x + len * Math.cos(angle);
                 const endY = y + len * Math.sin(angle);
                 
-                // 畫樹枝 (只有比較粗的樹枝才畫出來，細的就只畫葉子，這樣才像圖)
-                if (width > 2) {
-                    ctx.strokeStyle = config.trunkColor;
-                    ctx.lineWidth = width;
-                    ctx.lineCap = 'round';
-                    ctx.lineTo(endX, endY);
-                    ctx.stroke();
-                }
+                // 畫樹枝 (從粗到細)
+                ctx.strokeStyle = config.trunkColor;
+                ctx.lineWidth = width;
+                ctx.lineCap = 'round';
+                ctx.lineTo(endX, endY);
+                ctx.stroke();
 
-                // --- 畫茂密葉子的邏輯 ---
-                // 當樹枝夠細，或者已經很末端時，開始畫大量的愛心
-                if (depth < 4 || width < 3) {
-                    // 每個末端畫 2-3 個愛心，造成堆疊感
-                    for(let i=0; i<2; i++) {
-                        // 隨機位置偏移，造成蓬鬆感
-                        const offsetX = (Math.random() - 0.5) * 20;
-                        const offsetY = (Math.random() - 0.5) * 20;
-                        const leafSize = config.leafSize * (0.8 + Math.random() * 0.5);
-                        // 隨機角度
+                // --- 終止條件：樹枝夠細或夠短時，畫葉子 ---
+                if (len < 15 || width < 2) {
+                    // 在末端畫 3-5 片重疊的葉子，製造茂密感
+                    const leafCount = 3 + Math.floor(Math.random() * 3);
+                    for(let i=0; i<leafCount; i++) {
+                        const offsetX = (Math.random() - 0.5) * 15;
+                        const offsetY = (Math.random() - 0.5) * 15;
+                        const size = config.leafSize * (0.8 + Math.random() * 0.6);
                         const leafAngle = Math.random() * Math.PI * 2;
-                        
-                        drawHeart(endX + offsetX, endY + offsetY, leafSize, leafAngle, getRandomColor(), 0.9);
+                        // 葉子稍微透明一點，疊加起來更好看
+                        ctx.globalAlpha = 0.8;
+                        drawHeart(endX + offsetX, endY + offsetY, size, leafAngle, getRandomColor());
+                        ctx.globalAlpha = 1.0;
                     }
-                }
-
-                // 停止條件
-                if (depth <= 0) {
+                    
                     animatingTasks--;
                     if (animatingTasks === 0) finishGrowth();
                     return;
                 }
 
-                // --- 生長下一段 ---
-                // 為了讓樹更圓，分叉角度要大
-                const subBranches = 2; // 分兩叉
-                for (let i = 0; i < subBranches; i++) {
-                    // 隨機角度變化 (-0.6 到 0.6 弧度)
-                    const angleVar = (Math.random() - 0.5) * 1.2;
-                    // 長度縮減 (0.7 到 0.85 倍)
-                    const lenShrink = 0.7 + Math.random() * 0.15;
-                    
-                    drawTree(
-                        endX, 
-                        endY, 
-                        len * lenShrink, 
-                        angle + angleVar, 
-                        width * 0.7, 
-                        depth - 1
-                    );
-                }
+                // --- 生長下一段 (分叉) ---
+                // 隨機角度變化，讓樹更自然
+                const angleVar1 = config.branchAngle + (Math.random() - 0.5) * 0.2;
+                const angleVar2 = config.branchAngle + (Math.random() - 0.5) * 0.2;
+                // 長度隨機縮減
+                const lenShrink = config.lengthRatio * (0.9 + Math.random() * 0.2);
+
+                // 右分枝
+                drawBranch(endX, endY, len * lenShrink, angle + angleVar1, width * config.widthRatio);
+                // 左分枝
+                drawBranch(endX, endY, len * lenShrink, angle - angleVar1, width * config.widthRatio);
                 
                 animatingTasks--;
 
             }, config.growSpeed);
         }
 
-        // --- 落葉動畫 ---
+        // --- 落葉動畫 (保持不變) ---
         class Leaf {
             constructor() {
                 this.x = Math.random() * canvas.width;
@@ -243,52 +203,39 @@
                 this.angle = Math.random() * 6;
                 this.spin = (Math.random() - 0.5) * 0.1;
                 this.color = getRandomColor();
-                // 讓落葉有一些左右飄動
-                this.swaySpeed = 0.02 + Math.random() * 0.03;
-                this.swayOffset = Math.random() * Math.PI * 2;
             }
             update() {
                 this.y += this.speed;
                 this.angle += this.spin;
-                this.x += Math.sin(this.swayOffset) * 0.5;
-                this.swayOffset += this.swaySpeed;
                 return this.y < canvas.height + 20;
             }
             draw() {
-                drawHeart(this.x, this.y, this.size, this.angle, this.color, 0.8);
+                drawHeart(this.x, this.y, this.size, this.angle, this.color);
             }
         }
 
         function animateFallingLeaves() {
             if (!isTreeDone) return;
-            
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // 畫背景樹
             if (treeImage) ctx.drawImage(treeImage, 0, 0);
-
-            // 產生新落葉 (機率稍微調高讓畫面豐富)
             if (Math.random() < 0.1) fallingLeaves.push(new Leaf());
-
             fallingLeaves = fallingLeaves.filter(leaf => {
                 leaf.draw();
                 return leaf.update();
             });
-
             requestAnimationFrame(animateFallingLeaves);
         }
 
-        // --- 啟動程式 ---
-        // 樹的位置調整到畫面右側 (x = canvas.width * 0.75)
-        const startX = window.innerWidth > 800 ? canvas.width * 0.7 : canvas.width * 0.5;
-        // 手機版的話樹就置中，電腦版靠右
+        // --- 啟動 ---
+        // 樹的位置在右側 70%
+        const startX = canvas.width * 0.7;
         
-        drawTree(
-            startX,            // X 起點
-            canvas.height,     // Y 起點 (最下面)
-            130,               // 初始長度
-            -Math.PI / 2,      // 角度 (垂直向上)
-            25,                // 初始粗細 (加粗)
-            11                 // 遞迴深度 (11層會非常茂密)
+        drawBranch(
+            startX,            // X
+            canvas.height,     // Y (最下面)
+            140,               // 初始長度
+            -Math.PI / 2,      // 角度 (向上)
+            20                 // 初始粗細
         );
 
     </script>
