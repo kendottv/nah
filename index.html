@@ -4,18 +4,149 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>生日快樂</title>
-    <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- CSS 樣式區 --- */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: 'Arial', sans-serif;
+        }
+
+        canvas {
+            display: block;
+            filter: drop-shadow(0 0 5px rgba(255, 105, 180, 0.4));
+            position: absolute;
+            z-index: 1;
+        }
+
+        /* 文字區塊設定 */
+        #card-text {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            color: #fff;
+            opacity: 0;
+            transition: opacity 3s ease-in;
+            pointer-events: none;
+        }
+
+        /* 主標題樣式 */
+        .title {
+            font-family: 'Great Vibes', cursive;
+            font-size: 5rem;
+            color: #FFB7C5;
+            text-shadow: 0 0 10px rgba(255, 105, 180, 0.8);
+            margin-bottom: 10px;
+        }
+
+        /* 副標題樣式 */
+        .subtitle {
+            font-size: 1.5rem;
+            color: #ddd;
+            letter-spacing: 2px;
+        }
+
+        /* 顯示文字用的 class */
+        .show-text {
+            opacity: 1 !important;
+        }
+    </style>
 </head>
 <body>
 
     <div id="card-text">
         <div class="title">Happy Birthday</div>
-        <div class="subtitle">To My Best Friend</div>
+        <div class="subtitle">致 我最親愛的朋友</div>
     </div>
 
     <canvas id="canvas"></canvas>
 
-    <script src="script.js"></script>
+    <script>
+        // --- JavaScript 邏輯區 ---
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        const config = {
+            startLen: 130,
+            branchWidth: 10,
+            colorTrunk: '#8B4513',
+            colorHeart: '#FF69B4',
+            growSpeed: 40,
+            lengthRatio: 0.75,
+            angleVar: 0.4
+        };
+
+        let animatingTasks = 0; 
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resizeCanvas();
+
+        function drawHeart(x, y, size, angle) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle - Math.PI/2);
+            ctx.fillStyle = config.colorHeart;
+            ctx.beginPath();
+            let topCurveHeight = size * 0.3;
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(-size / 2, -topCurveHeight, -size, size / 3, 0, size);
+            ctx.bezierCurveTo(size, size / 3, size / 2, -topCurveHeight, 0, 0);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function showTitle() {
+            const textDiv = document.getElementById('card-text');
+            textDiv.classList.add('show-text');
+        }
+
+        function drawBranch(startX, startY, len, angle, width) {
+            ctx.beginPath();
+            ctx.moveTo(startX, startY);
+            const endX = startX + len * Math.cos(angle);
+            const endY = startY + len * Math.sin(angle);
+            
+            ctx.lineCap = 'round';
+            ctx.lineWidth = width;
+            ctx.strokeStyle = config.colorTrunk;
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+
+            if (len < 10) {
+                drawHeart(endX, endY, 12, angle);
+                return;
+            }
+
+            animatingTasks++;
+
+            setTimeout(() => {
+                const randomAngle = (Math.random() - 0.5) * config.angleVar; 
+                
+                drawBranch(endX, endY, len * config.lengthRatio, angle + 0.5 + randomAngle, width * 0.7);
+                drawBranch(endX, endY, len * config.lengthRatio, angle - 0.5 + randomAngle, width * 0.7);
+                
+                animatingTasks--;
+                if (animatingTasks === 0) {
+                    showTitle();
+                }
+
+            }, config.growSpeed);
+        }
+
+        // 啟動
+        drawBranch(canvas.width / 2, canvas.height, config.startLen, -Math.PI / 2, config.branchWidth);
+        window.addEventListener('resize', resizeCanvas);
+    </script>
 </body>
 </html>
