@@ -1,0 +1,18 @@
+/* style.css */
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #1a1a1a; /* 深色背景 */
+    overflow: hidden; /* 隱藏捲軸，避免樹長太大出現捲軸 */
+    display: flex;
+    justify-content: center; /* 水平置中 */
+    align-items: center;     /* 垂直置中 */
+    height: 100vh;           /* 高度佔滿整個視窗 */
+}
+
+canvas {
+    display: block;
+    /* 讓樹枝和愛心有一點夢幻的發光效果 */
+    filter: drop-shadow(0 0 5px rgba(255, 105, 180, 0.5));
+}
