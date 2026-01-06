@@ -1,17 +1,38 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-    <!-- 你的 head 部分完全不變 -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy Birthday</title>
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
     <style>
-        /* 新增文字進場動畫 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Arial', sans-serif;
+        }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
         #text-container {
             position: absolute;
             z-index: 2;
             top: 50%;
-            left: 50%;                   /* 先從中間開始 */
+            left: 50%;
             transform: translate(-50%, -50%);
             color: #fff;
-            text-align: center;          /* 改成置中，看起來更平衡 */
+            text-align: center;
             pointer-events: none;
             opacity: 0;
             transition: opacity 2.5s ease-out, transform 2.5s ease-out;
@@ -21,7 +42,7 @@
 
         .title {
             font-family: 'Great Vibes', cursive;
-            font-size: 5rem;             /* 稍微放大一點 */
+            font-size: 5rem;
             color: #FF69B4;
             margin-bottom: 20px;
             text-shadow: 0 0 20px rgba(255, 105, 180, 0.9);
@@ -32,15 +53,13 @@
             line-height: 1.9;
         }
 
-        /* 文字最終出現的狀態 */
         .show-text {
             opacity: 1 !important;
-            transform: translate(-150%, -50%) !important;  /* 移動到左側 */
+            transform: translate(-150%, -50%) !important;
         }
     </style>
 </head>
 <body>
-    <!-- 你的文字區塊不變 -->
     <div id="text-container">
         <div class="title">Happy Birthday</div>
         <div class="message">
@@ -64,63 +83,89 @@
 
         const config = {
             trunkColor: '#FFB6C1',
-            growSpeed: 15,               // 稍微加快一點
-            leafSize: 14,
-            lengthRatio: 0.82,
-            widthRatio: 0.68
+            growSpeed: 12,
+            leafSize: 15,
+            lengthRatio: 0.85,
+            widthRatio: 0.7,
+            heartWidth: 1.4,
+            heartHeight: 0.75
         };
 
         let animatingTasks = 0;
         let isTreeDone = false;
         let fallingLeaves = [];
         let treeImage = null;
-        let treeOffsetX = 0;             // 新增：樹的水平位移
-        let targetOffsetX = 0;           // 目標位移
+        let treeOffsetX = 0;
+        let targetOffsetX = 0;
 
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            drawAll();                       // 重繪時考慮位移
+            if (treeImage) drawAll();
         }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // ... getRandomColor, drawHeart, drawLeafCluster 完全不變 ...
+        function getRandomColor() {
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function drawHeart(x, y, size, angle, color) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            const s = size / 20;
+            for (let i = 0; i < Math.PI * 2; i += 0.1) {
+                const hx = s * 16 * Math.pow(Math.sin(i), 3);
+                const hy = -s * (13 * Math.cos(i) - 5 * Math.cos(2 * i) - 2 * Math.cos(3 * i) - Math.cos(4 * i));
+                if (i === 0) ctx.moveTo(hx, hy);
+                else ctx.lineTo(hx, hy);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawLeafCluster(x, y, count, size) {
+            for (let i = 0; i < count; i++) {
+                const offsetX = (Math.random() - 0.5) * size * 1.5;
+                const offsetY = (Math.random() - 0.5) * size * 1.5;
+                const leafAngle = Math.random() * Math.PI * 2;
+                const leafColor = getRandomColor();
+                drawHeart(x + offsetX, y + offsetY, size, leafAngle, leafColor);
+            }
+        }
 
         function drawAll() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (treeImage) {
                 ctx.drawImage(treeImage, treeOffsetX, 0);
             }
-            // 落葉也跟著樹移動
             fallingLeaves.forEach(leaf => {
-                leaf.x += (targetOffsetX - treeOffsetX) * 0.02; // 輕微跟隨（可選）
+                leaf.x += (targetOffsetX - treeOffsetX) * 0.02;
             });
         }
 
         function finishGrowth() {
             isTreeDone = true;
             
-            // 先存下「中間位置」的樹圖
             const img = new Image();
             img.src = canvas.toDataURL();
             img.onload = () => {
                 treeImage = img;
 
-                // 開始移動樹到右側 + 顯示文字
-                targetOffsetX = canvas.width * 0.35;  // 最終樹中心偏右（約移動到 70% 位置）
+                targetOffsetX = canvas.width * 0.3;
                 
-                // 文字淡入並左移
                 const textContainer = document.getElementById('text-container');
                 textContainer.classList.add('show-text');
 
-                // 啟動落葉
                 animateFallingLeaves();
 
-                // 平滑移動樹
                 function moveTree() {
                     if (Math.abs(treeOffsetX - targetOffsetX) > 1) {
-                        treeOffsetX += (targetOffsetX - treeOffsetX) * 0.08;  // 緩動
+                        treeOffsetX += (targetOffsetX - treeOffsetX) * 0.08;
                         drawAll();
                         requestAnimationFrame(moveTree);
                     } else {
@@ -132,7 +177,6 @@
             };
         }
 
-        // --- 愛心形狀更圓潤的調整 ---
         function drawBranch(x, y, len, angle, width, depth, side) {
             animatingTasks++;
 
@@ -148,43 +192,47 @@
                 ctx.lineTo(endX, endY);
                 ctx.stroke();
 
-                // 葉子填充
-                if (depth > 0 && Math.random() < 0.95) {
+                if (depth > 0 && Math.random() < 0.92) {
                     const t = Math.random();
                     const midX = x + (endX - x) * t;
                     const midY = y + (endY - y) * t;
-                    drawLeafCluster(midX, midY, 4 + depth, config.leafSize * 0.95);
+                    drawLeafCluster(midX, midY, 4 + depth, config.leafSize * 0.9);
                 }
 
-                if (len < 12 || width < 1.8) {
-                    drawLeafCluster(endX, endY, 8, config.leafSize);
+                if (len < 10 || width < 1.5) {
+                    drawLeafCluster(endX, endY, 10, config.leafSize);
                     animatingTasks--;
                     if (animatingTasks === 0) finishGrowth();
                     return;
                 }
 
-                // 愛心輪廓更圓的調整
-                const baseSpread = 0.4;
-                const inwardCurve = depth * 0.07;
-
-                let leftAdjust = -baseSpread;
-                let rightAdjust = baseSpread;
-
-                if (depth > 0) {
-                    // 外層枝條往內彎，形成愛心弧度
-                    if (side === -1) leftAdjust += inwardCurve;   // 左側往內
-                    if (side === 1) rightAdjust -= inwardCurve;   // 右側往內
+                let leftAngle, rightAngle;
+                
+                if (depth === 0) {
+                    leftAngle = angle - 0.55 * config.heartWidth;
+                    rightAngle = angle + 0.55 * config.heartWidth;
+                } else {
+                    const spreadFactor = 0.35 * config.heartWidth;
+                    const verticalSuppression = depth * 0.05 * config.heartHeight;
+                    
+                    leftAngle = angle - spreadFactor + verticalSuppression;
+                    rightAngle = angle + spreadFactor + verticalSuppression;
+                    
+                    if (depth > 2) {
+                        const inwardCurve = 0.08;
+                        if (side === -1) leftAngle += inwardCurve;
+                        if (side === 1) rightAngle -= inwardCurve;
+                    }
                 }
 
-                // 小隨機讓樹更自然
-                leftAdjust += (Math.random() - 0.5) * 0.15;
-                rightAdjust += (Math.random() - 0.5) * 0.15;
+                leftAngle += (Math.random() - 0.5) * 0.12;
+                rightAngle += (Math.random() - 0.5) * 0.12;
 
                 const nextSideLeft = side === 0 ? -1 : side;
                 const nextSideRight = side === 0 ? 1 : side;
 
-                drawBranch(endX, endY, len * config.lengthRatio, angle + leftAdjust, width * config.widthRatio, depth + 1, nextSideLeft);
-                drawBranch(endX, endY, len * config.lengthRatio, angle + rightAdjust, width * config.widthRatio, depth + 1, nextSideRight);
+                drawBranch(endX, endY, len * config.lengthRatio, leftAngle, width * config.widthRatio, depth + 1, nextSideLeft);
+                drawBranch(endX, endY, len * config.lengthRatio, rightAngle, width * config.widthRatio, depth + 1, nextSideRight);
 
                 animatingTasks--;
             }, config.growSpeed);
@@ -199,7 +247,7 @@
                 this.angle = Math.random() * Math.PI * 2;
                 this.spin = (Math.random() - 0.5) * 0.12;
                 this.color = getRandomColor();
-                this.wind = (Math.random() - 0.5) * 0.8;  // 輕微左右飄
+                this.wind = (Math.random() - 0.5) * 0.8;
             }
             update() {
                 this.y += this.speed;
@@ -208,7 +256,7 @@
                 return this.y < canvas.height + 30;
             }
             draw() {
-                drawHeart(this.x + treeOffsetX, this.y, this.size, this.angle, this.color);  // 跟隨樹移動
+                drawHeart(this.x + treeOffsetX, this.y, this.size, this.angle, this.color);
             }
         }
 
@@ -219,15 +267,14 @@
             if (Math.random() < 0.2) fallingLeaves.push(new Leaf());
 
             fallingLeaves = fallingLeaves.filter(leaf => {
-                leaf.update();
-                leaf.draw();
-                return leaf.update();  // 再呼叫一次確保回傳正確
+                const alive = leaf.update();
+                if (alive) leaf.draw();
+                return alive;
             });
 
             requestAnimationFrame(animateFallingLeaves);
         }
 
-        // 啟動：從畫面正中央開始生長
         const startX = canvas.width / 2;
         const startY = canvas.height + 20;
         drawBranch(startX, startY, 150, -Math.PI / 2, 26, 0, 0);
