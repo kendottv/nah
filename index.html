@@ -7,6 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Noto+Sans+TC:wght@300;500&display=swap" rel="stylesheet">
     
     <style>
+        /* 保持不變的樣式設定 */
         body {
             margin: 0;
             padding: 0;
@@ -25,7 +26,6 @@
             z-index: 1;
         }
 
-        /* 左側文字區塊 (保留你成功的版面) */
         #text-container {
             position: absolute;
             z-index: 2;
@@ -38,14 +38,16 @@
             opacity: 0;
             transition: opacity 3s ease-in;
             max-width: 400px;
+            /* 增加一點文字陰影讓它在黑背景更清楚 */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
 
         .title {
             font-family: 'Great Vibes', cursive;
             font-size: 4rem;
-            color: #FF69B4; /* 霓虹粉標題 */
+            color: #FF69B4;
             margin-bottom: 15px;
-            text-shadow: 0 0 10px rgba(255, 105, 180, 0.7);
+            text-shadow: 0 0 15px rgba(255, 105, 180, 0.8);
         }
 
         .message {
@@ -81,16 +83,16 @@
         const ctx = canvas.getContext('2d');
 
         // --- 繽紛配色盤 ---
-        const colors = ['#FF69B4', '#FFB6C1', '#FFD700', '#FFA500', '#FF4500', '#DA70D6', '#FFC0CB'];
+        const colors = ['#FF69B4', '#FFB6C1', '#FFD700', '#FFA500', '#FF4500', '#DA70D6', '#FFC0CB', '#FF1493'];
 
         // --- 參數設定 ---
         const config = {
-            trunkColor: '#FFC0CB', // 淺粉色樹幹 (參考圖2)
-            growSpeed: 20,         // 生長速度
-            leafSize: 12,          // 葉子基礎大小
-            branchAngle: 0.35,     // 樹枝分叉角度基礎值
-            lengthRatio: 0.75,     // 樹枝長度縮減比例
-            widthRatio: 0.7        // 樹枝粗細縮減比例
+            trunkColor: '#FFB6C1', // 【修改點1】改為參考圖的淺粉色樹幹
+            growSpeed: 25,         // 生長速度 (毫秒)
+            leafSize: 14,          // 葉子基礎大小
+            branchAngle: 0.4,      // 分叉角度
+            lengthRatio: 0.75,     // 長度縮減
+            widthRatio: 0.7        // 粗細縮減
         };
 
         let animatingTasks = 0;
@@ -110,7 +112,7 @@
             return colors[Math.floor(Math.random() * colors.length)];
         }
 
-        // 畫愛心
+        // 畫愛心小幫手
         function drawHeart(x, y, size, angle, color) {
             ctx.save();
             ctx.translate(x, y);
@@ -125,6 +127,20 @@
             ctx.restore();
         }
 
+        // 輔助函數：在指定位置附近畫一簇葉子
+        function drawLeafCluster(x, y, countBase, sizeBase) {
+            const count = countBase + Math.floor(Math.random() * 3);
+            for(let i=0; i<count; i++) {
+                const offsetX = (Math.random() - 0.5) * sizeBase * 2.5;
+                const offsetY = (Math.random() - 0.5) * sizeBase * 2.5;
+                const size = sizeBase * (0.7 + Math.random() * 0.6);
+                const leafAngle = Math.random() * Math.PI * 2;
+                ctx.globalAlpha = 0.85; // 稍微透明讓疊加更好看
+                drawHeart(x + offsetX, y + offsetY, size, leafAngle, getRandomColor());
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
         // 生長結束
         function finishGrowth() {
             isTreeDone = true;
@@ -137,8 +153,8 @@
             };
         }
 
-        // --- 核心：更有靈魂的遞迴樹 ---
-        function drawBranch(x, y, len, angle, width) {
+        // --- 核心：粉色彎曲樹幹 + 愛心包裹 ---
+        function drawBranch(x, y, len, angle, width, depth) {
             animatingTasks++;
 
             setTimeout(() => {
@@ -149,51 +165,45 @@
                 const endX = x + len * Math.cos(angle);
                 const endY = y + len * Math.sin(angle);
                 
-                // 畫樹枝 (從粗到細)
+                // 畫樹幹 (粉色、圓潤)
                 ctx.strokeStyle = config.trunkColor;
                 ctx.lineWidth = width;
                 ctx.lineCap = 'round';
                 ctx.lineTo(endX, endY);
                 ctx.stroke();
 
-                // --- 終止條件：樹枝夠細或夠短時，畫葉子 ---
+                // 【修改點2】愛心包裹效果
+                // 只要不是最底部的樹幹，就有很高機率沿著樹枝長出愛心
+                if (depth > 1 && Math.random() < 0.8) {
+                     // 在樹枝中段隨機位置長葉子
+                     const midX = x + (endX - x) * Math.random();
+                     const midY = y + (endY - y) * Math.random();
+                     drawLeafCluster(midX, midY, 2, config.leafSize * 0.8);
+                }
+
+                // --- 終止條件：樹枝末梢 ---
                 if (len < 15 || width < 2) {
-                    // 在末端畫 3-5 片重疊的葉子，製造茂密感
-                    const leafCount = 3 + Math.floor(Math.random() * 3);
-                    for(let i=0; i<leafCount; i++) {
-                        const offsetX = (Math.random() - 0.5) * 15;
-                        const offsetY = (Math.random() - 0.5) * 15;
-                        const size = config.leafSize * (0.8 + Math.random() * 0.6);
-                        const leafAngle = Math.random() * Math.PI * 2;
-                        // 葉子稍微透明一點，疊加起來更好看
-                        ctx.globalAlpha = 0.8;
-                        drawHeart(endX + offsetX, endY + offsetY, size, leafAngle, getRandomColor());
-                        ctx.globalAlpha = 1.0;
-                    }
+                    // 末端畫更茂密的一簇
+                    drawLeafCluster(endX, endY, 4, config.leafSize);
                     
                     animatingTasks--;
                     if (animatingTasks === 0) finishGrowth();
                     return;
                 }
 
-                // --- 生長下一段 (分叉) ---
-                // 隨機角度變化，讓樹更自然
-                const angleVar1 = config.branchAngle + (Math.random() - 0.5) * 0.2;
-                const angleVar2 = config.branchAngle + (Math.random() - 0.5) * 0.2;
-                // 長度隨機縮減
-                const lenShrink = config.lengthRatio * (0.9 + Math.random() * 0.2);
-
-                // 右分枝
-                drawBranch(endX, endY, len * lenShrink, angle + angleVar1, width * config.widthRatio);
-                // 左分枝
-                drawBranch(endX, endY, len * lenShrink, angle - angleVar1, width * config.widthRatio);
+                // --- 生長下一段 ---
+                // 增加角度的隨機性，製造彎曲感
+                const angleWobble = (Math.random() - 0.5) * 0.5; 
+                
+                drawBranch(endX, endY, len * config.lengthRatio, angle + config.branchAngle + angleWobble, width * config.widthRatio, depth + 1);
+                drawBranch(endX, endY, len * config.lengthRatio, angle - config.branchAngle + angleWobble, width * config.widthRatio, depth + 1);
                 
                 animatingTasks--;
 
             }, config.growSpeed);
         }
 
-        // --- 落葉動畫 (保持不變) ---
+        // --- 落葉動畫 ---
         class Leaf {
             constructor() {
                 this.x = Math.random() * canvas.width;
@@ -218,7 +228,7 @@
             if (!isTreeDone) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (treeImage) ctx.drawImage(treeImage, 0, 0);
-            if (Math.random() < 0.1) fallingLeaves.push(new Leaf());
+            if (Math.random() < 0.15) fallingLeaves.push(new Leaf()); // 增加一點落葉頻率
             fallingLeaves = fallingLeaves.filter(leaf => {
                 leaf.draw();
                 return leaf.update();
@@ -232,10 +242,11 @@
         
         drawBranch(
             startX,            // X
-            canvas.height,     // Y (最下面)
-            140,               // 初始長度
+            canvas.height + 20, // Y (稍微從畫面外開始長，根部更自然)
+            130,               // 初始長度
             -Math.PI / 2,      // 角度 (向上)
-            20                 // 初始粗細
+            22,                // 初始粗細
+            0                  // 初始深度
         );
 
     </script>
