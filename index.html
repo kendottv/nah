@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Happy Birthday</title>
-    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Noto+Sans+TC:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Noto+Sans+TC:wght@300;500&display=swap" rel="stylesheet">
     
     <style>
         body {
             margin: 0;
             padding: 0;
-            background-color: #111; /* 背景稍微調亮一點點，沒那麼死黑，比較像繪本 */
+            background-color: #000;
             overflow: hidden;
             display: flex;
             height: 100vh;
@@ -23,38 +23,37 @@
             top: 0;
             left: 0;
             z-index: 1;
-            /* 增加一點柔焦效果，讓繪本感更重 */
-            filter: contrast(1.2) brightness(1.1) blur(0.5px);
+            /* 增加一點對比度讓色彩更鮮豔 */
+            filter: contrast(1.1);
         }
 
         #text-container {
             position: absolute;
             z-index: 2;
             top: 50%;
-            left: 8%;
+            left: 10%;
             transform: translateY(-50%);
             color: #fff;
             text-align: left;
             pointer-events: none;
             opacity: 0;
-            transition: opacity 2s ease-in;
-            max-width: 450px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+            transition: opacity 3s ease-in;
+            max-width: 400px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
 
         .title {
             font-family: 'Great Vibes', cursive;
-            font-size: 4.5rem;
-            color: #FF88BB; /* 更柔和的粉色 */
-            margin-bottom: 20px;
-            font-weight: bold;
+            font-size: 4rem;
+            color: #FF69B4;
+            margin-bottom: 15px;
+            text-shadow: 0 0 15px rgba(255, 105, 180, 0.8);
         }
 
         .message {
-            font-size: 1.2rem;
-            line-height: 1.9;
-            color: #f0f0f0;
-            font-weight: 500;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #eee;
         }
         
         .show-text {
@@ -83,20 +82,17 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
-        // --- 繪本風配色 ---
-        // 顏色更飽和、溫暖
-        const leafColors = ['#FF55A3', '#FF99C8', '#FFD700', '#FF8C00', '#FF4500', '#C71585'];
-        const trunkColor = '#8B4513'; // 經典的繪本棕色
+        const colors = ['#FF69B4', '#FFB6C1', '#FFD700', '#FFA500', '#FF4500', '#DA70D6', '#FFC0CB', '#FF1493'];
 
         const config = {
-            growSpeedTrunk: 30,    // 樹幹生長速度
-            bloomSpeed: 100,       // 長葉子的速度 (波波波的間隔)
-            initialTrunkWidth: 40, // 【修改重點】初始樹幹超級粗
-            leafClusterSize: 35    // 葉子團的大小
+            trunkColor: '#FFB6C1',
+            growSpeed: 20,         // 生長速度略微加快
+            leafSize: 13,          // 葉子大小
+            lengthRatio: 0.8,      // 長度縮減比例 (讓樹枝長一點，愛心更大)
+            widthRatio: 0.7
         };
 
-        let animatingTasks = 0; // 追蹤樹幹任務
-        let leafSpots = [];     // 存放準備長葉子的位置
+        let animatingTasks = 0;
         let isTreeDone = false;
         let fallingLeaves = [];
         let treeImage = null;
@@ -110,10 +106,9 @@
         resizeCanvas();
 
         function getRandomColor() {
-            return leafColors[Math.floor(Math.random() * leafColors.length)];
+            return colors[Math.floor(Math.random() * colors.length)];
         }
 
-        // 畫愛心 (維持不變)
         function drawHeart(x, y, size, angle, color) {
             ctx.save();
             ctx.translate(x, y);
@@ -128,25 +123,21 @@
             ctx.restore();
         }
 
-        // 在指定位置畫一大團蓬鬆的葉子
-        function drawHugeLeafCluster(x, y) {
-            const count = 8 + Math.floor(Math.random() * 5); // 每一團有 8-12 片大葉子
+        function drawLeafCluster(x, y, countBase, sizeBase) {
+            // 增加葉子數量，讓愛心更扎實
+            const count = countBase + Math.floor(Math.random() * 4);
             for(let i=0; i<count; i++) {
-                // 隨機偏移量大一點，製造蓬鬆感
-                const offsetX = (Math.random() - 0.5) * config.leafClusterSize * 2;
-                const offsetY = (Math.random() - 0.5) * config.leafClusterSize * 2;
-                const size = config.leafClusterSize * (0.8 + Math.random() * 0.7); // 葉子很大
+                const offsetX = (Math.random() - 0.5) * sizeBase * 3;
+                const offsetY = (Math.random() - 0.5) * sizeBase * 3;
+                const size = sizeBase * (0.7 + Math.random() * 0.6);
                 const leafAngle = Math.random() * Math.PI * 2;
-                
-                ctx.shadowColor = 'rgba(0,0,0,0.3)'; // 加一點陰影增加立體感
-                ctx.shadowBlur = 5;
+                ctx.globalAlpha = 0.9;
                 drawHeart(x + offsetX, y + offsetY, size, leafAngle, getRandomColor());
-                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1.0;
             }
         }
 
-        // --- 階段三：動畫結束 ---
-        function finishAnimation() {
+        function finishGrowth() {
             isTreeDone = true;
             document.getElementById('text-container').classList.add('show-text');
             const img = new Image();
@@ -157,95 +148,90 @@
             };
         }
 
-        // --- 階段二：爆米花長葉子 ---
-        function startBlooming() {
-            let spotIndex = 0;
-            // 使用 setInterval 讓葉子一團一團長出來，而不是瞬間全部出現
-            const bloomInterval = setInterval(() => {
-                if (spotIndex >= leafSpots.length) {
-                    clearInterval(bloomInterval);
-                    // 等最後一團長完休息一下再顯示文字
-                    setTimeout(finishAnimation, 1000); 
-                    return;
-                }
-                const spot = leafSpots[spotIndex];
-                drawHugeLeafCluster(spot.x, spot.y);
-                spotIndex++;
-            }, config.bloomSpeed);
-        }
-
-        // --- 階段一：只長粗樹幹 ---
-        function drawTrunk(x, y, len, angle, width) {
+        // --- 核心：愛心形狀引導生長 ---
+        // 增加 side 參數：0=主幹, -1=左側, 1=右側
+        function drawBranch(x, y, len, angle, width, depth, side) {
             animatingTasks++;
 
             setTimeout(() => {
                 ctx.beginPath();
                 ctx.moveTo(x, y);
-                
-                // 計算終點
                 const endX = x + len * Math.cos(angle);
                 const endY = y + len * Math.sin(angle);
                 
-                // 【修改重點】繪本風樹幹：粗、圓頭
-                ctx.strokeStyle = trunkColor;
+                ctx.strokeStyle = config.trunkColor;
                 ctx.lineWidth = width;
-                ctx.lineCap = 'round'; // 讓線條頭尾圓潤
-                ctx.lineJoin = 'round'; // 讓轉折處圓潤
-                
-                // 稍微加一點點隨機彎曲，不要太直
-                const cpX = (x + endX) / 2 + (Math.random() - 0.5) * len * 0.1;
-                const cpY = (y + endY) / 2 + (Math.random() - 0.5) * len * 0.1;
-                ctx.quadraticCurveTo(cpX, cpY, endX, endY);
-                // ctx.lineTo(endX, endY); // 如果喜歡直一點的就解開這行，註解上面兩行
+                ctx.lineCap = 'round';
+                ctx.lineTo(endX, endY);
                 ctx.stroke();
 
-                // --- 終止條件 ---
-                // 當樹枝夠短或夠細，停止生長，並記錄這個位置要長葉子
-                if (len < 25 || width < 8) {
-                    leafSpots.push({x: endX, y: endY}); // 記錄位置
+                // 沿著樹枝茂密長葉子，填充愛心形狀
+                if (depth > 0 && Math.random() < 0.9) {
+                     const midX = x + (endX - x) * Math.random();
+                     const midY = y + (endY - y) * Math.random();
+                     // 深度越深(越外層)，葉子越多越密
+                     drawLeafCluster(midX, midY, 3 + depth/2, config.leafSize * 0.9);
+                }
+
+                if (len < 12 || width < 1.5) {
+                    drawLeafCluster(endX, endY, 6, config.leafSize);
                     animatingTasks--;
-                    if (animatingTasks === 0) {
-                        // 樹幹全部長完了，進入下一階段
-                        setTimeout(startBlooming, 500); 
-                    }
+                    if (animatingTasks === 0) finishGrowth();
                     return;
                 }
 
-                // --- 生長下一段 ---
-                const angleVar = 0.4 + (Math.random() - 0.5) * 0.2;
-                const lenShrink = 0.8 + Math.random() * 0.1;
-                const widthShrink = 0.75; // 變細的速度慢一點，維持粗壯感
+                // --- 計算愛心形狀的分叉角度 ---
+                let leftAdjust, rightAdjust;
+                // 基礎開展角度
+                const baseSpread = 0.35;
+                // 向內彎曲力度：深度越深，越往中心彎
+                const inwardCurve = depth * 0.08; 
 
-                // 分兩叉
-                drawTrunk(endX, endY, len * lenShrink, angle + angleVar, width * widthShrink);
-                drawTrunk(endX, endY, len * lenShrink, angle - angleVar, width * widthShrink);
+                if (depth === 0) {
+                    // 愛心底部：大角度向外
+                    leftAdjust = -0.7;
+                    rightAdjust = 0.7;
+                } else {
+                    // 愛心輪廓：根據所在側別，決定彎曲方向
+                    // 左側枝：向左開展 + 向右內彎
+                    leftAdjust = -baseSpread + (side === -1 ? inwardCurve : 0);
+                    // 右側枝：向右開展 + 向左內彎
+                    rightAdjust = baseSpread - (side === 1 ? inwardCurve : 0);
+                    
+                    // 加入隨機扭動，保持自然感
+                    leftAdjust += (Math.random() - 0.5) * 0.2;
+                    rightAdjust += (Math.random() - 0.5) * 0.2;
+                }
+
+                // 決定子樹枝的側別
+                const nextSideLeft = side === 0 ? -1 : side;
+                const nextSideRight = side === 0 ? 1 : side;
+                
+                drawBranch(endX, endY, len * config.lengthRatio, angle + leftAdjust, width * config.widthRatio, depth + 1, nextSideLeft);
+                drawBranch(endX, endY, len * config.lengthRatio, angle + rightAdjust, width * config.widthRatio, depth + 1, nextSideRight);
                 
                 animatingTasks--;
 
-            }, config.growSpeedTrunk);
+            }, config.growSpeed);
         }
 
-        // --- 落葉動畫 (保持不變) ---
         class Leaf {
             constructor() {
                 this.x = Math.random() * canvas.width;
-                this.y = -50;
-                this.size = 15 + Math.random() * 15; // 落葉也變大
-                this.speed = 1 + Math.random() * 1.5;
+                this.y = -20;
+                this.size = 8 + Math.random() * 8;
+                this.speed = 1 + Math.random() * 2;
                 this.angle = Math.random() * 6;
-                this.spin = (Math.random() - 0.5) * 0.08;
+                this.spin = (Math.random() - 0.5) * 0.1;
                 this.color = getRandomColor();
             }
             update() {
                 this.y += this.speed;
                 this.angle += this.spin;
-                return this.y < canvas.height + 50;
+                return this.y < canvas.height + 20;
             }
             draw() {
-                ctx.shadowColor = 'rgba(0,0,0,0.2)';
-                ctx.shadowBlur = 5;
                 drawHeart(this.x, this.y, this.size, this.angle, this.color);
-                ctx.shadowBlur = 0;
             }
         }
 
@@ -253,7 +239,7 @@
             if (!isTreeDone) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             if (treeImage) ctx.drawImage(treeImage, 0, 0);
-            if (Math.random() < 0.08) fallingLeaves.push(new Leaf());
+            if (Math.random() < 0.15) fallingLeaves.push(new Leaf());
             fallingLeaves = fallingLeaves.filter(leaf => {
                 leaf.draw();
                 return leaf.update();
@@ -261,17 +247,10 @@
             requestAnimationFrame(animateFallingLeaves);
         }
 
-        // --- 啟動 ---
-        // 樹的位置在右側 75%
-        const startX = canvas.width * 0.75;
-        
-        drawTrunk(
-            startX,            // X
-            canvas.height + 30, // Y (從畫面外長進來)
-            160,               // 初始長度
-            -Math.PI / 2,      // 角度
-            config.initialTrunkWidth // 初始超級粗度
-        );
+        // 啟動：位置在右側 70%
+        const startX = canvas.width * 0.7;
+        // 初始 side 為 0 (主幹)
+        drawBranch(startX, canvas.height + 20, 140, -Math.PI / 2, 24, 0, 0);
 
     </script>
 </body>
